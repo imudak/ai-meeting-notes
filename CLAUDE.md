@@ -150,4 +150,4 @@ Claude Code Agent
 
 
 ## 次のアクション
-- 議事録形式カスタマイズ等の機能拡張
+- Vercel/Cloudflare Pagesへのデプロイ、運用テスト（カスタムテンプレート機能のUX確認）
