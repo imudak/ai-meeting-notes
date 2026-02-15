@@ -1,6 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
 import { generateMinutes } from './api'
-import { TEMPLATES, getTemplate } from './templates'
+import { 
+  getAllTemplates, 
+  getTemplate, 
+  isPresetTemplate,
+  addCustomTemplate,
+  updateCustomTemplate,
+  deleteCustomTemplate
+} from './templates'
+import type { Template } from './templates'
 import { copyMarkdown, downloadMarkdown, downloadPDF, downloadDOCX } from './export'
 import { MarkdownPreview } from './components/MarkdownPreview'
 import './App.css'
@@ -16,6 +24,8 @@ function App() {
   const [templateId, setTemplateId] = useState(() => localStorage.getItem('template-id') || 'default')
   const [viewMode, setViewMode] = useState<'preview' | 'raw'>('preview')
   const [exporting, setExporting] = useState(false)
+  const [editingTemplate, setEditingTemplate] = useState<Template | null>(null)
+  const [templates, setTemplates] = useState<Template[]>(getAllTemplates())
 
   const resultRef = useRef<HTMLDivElement>(null)
 
@@ -32,6 +42,57 @@ function App() {
   const saveTemplateId = (id: string) => {
     setTemplateId(id)
     localStorage.setItem('template-id', id)
+  }
+
+  const refreshTemplates = () => {
+    setTemplates(getAllTemplates())
+  }
+
+  const handleEditTemplate = (template: Template) => {
+    setEditingTemplate({ ...template })
+  }
+
+  const handleCreateCustom = () => {
+    const baseTemplate = getTemplate(templateId)
+    const newTemplate: Template = {
+      id: `custom-${Date.now()}`,
+      name: `${baseTemplate.name}のコピー`,
+      systemPrompt: baseTemplate.systemPrompt
+    }
+    setEditingTemplate(newTemplate)
+  }
+
+  const handleSaveTemplate = () => {
+    if (!editingTemplate) return
+    if (isPresetTemplate(editingTemplate.id)) {
+      // プリセットの場合は新規カスタムテンプレートとして保存
+      const newTemplate = {
+        ...editingTemplate,
+        id: `custom-${Date.now()}`,
+        name: `${editingTemplate.name}（カスタム）`
+      }
+      addCustomTemplate(newTemplate)
+      saveTemplateId(newTemplate.id)
+    } else {
+      // カスタムテンプレートの更新または追加
+      const exists = templates.some(t => t.id === editingTemplate.id)
+      if (exists) {
+        updateCustomTemplate(editingTemplate.id, editingTemplate)
+      } else {
+        addCustomTemplate(editingTemplate)
+      }
+      saveTemplateId(editingTemplate.id)
+    }
+    refreshTemplates()
+    setEditingTemplate(null)
+  }
+
+  const handleDeleteTemplate = (id: string) => {
+    if (isPresetTemplate(id)) return
+    if (!confirm('このカスタムテンプレートを削除しますか？')) return
+    deleteCustomTemplate(id)
+    if (templateId === id) saveTemplateId('default')
+    refreshTemplates()
   }
 
   const handleGenerate = async () => {
@@ -111,21 +172,107 @@ function App() {
             APIキーの取得はこちら →
           </a>
 
-          <h3 style={{ marginTop: '24px' }}>📄 テンプレート選択</h3>
-          <p className="settings-desc">議事録の出力フォーマットを選択できます。</p>
-          <div className="template-selector">
-            {TEMPLATES.map(t => (
-              <label key={t.id} className="template-option">
-                <input
-                  type="radio"
-                  name="template"
-                  value={t.id}
-                  checked={templateId === t.id}
-                  onChange={e => saveTemplateId(e.target.value)}
-                />
-                <span>{t.name}</span>
-              </label>
+          <h3 style={{ marginTop: '24px' }}>📄 テンプレート管理</h3>
+          <p className="settings-desc">議事録の出力フォーマットを選択・カスタマイズできます。</p>
+          
+          <div className="template-actions">
+            <button className="btn-primary" onClick={handleCreateCustom}>
+              ➕ カスタムテンプレートを作成
+            </button>
+          </div>
+
+          <div className="template-list">
+            <h4>プリセットテンプレート</h4>
+            {templates.filter(t => isPresetTemplate(t.id)).map(t => (
+              <div key={t.id} className="template-item">
+                <label className="template-option">
+                  <input
+                    type="radio"
+                    name="template"
+                    value={t.id}
+                    checked={templateId === t.id}
+                    onChange={e => saveTemplateId(e.target.value)}
+                  />
+                  <span>{t.name}</span>
+                </label>
+                <button 
+                  className="btn-secondary btn-small" 
+                  onClick={() => handleEditTemplate(t)}
+                  title="このテンプレートをベースにカスタム作成"
+                >
+                  📝 編集
+                </button>
+              </div>
             ))}
+
+            {templates.filter(t => !isPresetTemplate(t.id)).length > 0 && (
+              <>
+                <h4 style={{ marginTop: '16px' }}>カスタムテンプレート</h4>
+                {templates.filter(t => !isPresetTemplate(t.id)).map(t => (
+                  <div key={t.id} className="template-item">
+                    <label className="template-option">
+                      <input
+                        type="radio"
+                        name="template"
+                        value={t.id}
+                        checked={templateId === t.id}
+                        onChange={e => saveTemplateId(e.target.value)}
+                      />
+                      <span>{t.name}</span>
+                    </label>
+                    <button 
+                      className="btn-secondary btn-small" 
+                      onClick={() => handleEditTemplate(t)}
+                    >
+                      📝 編集
+                    </button>
+                    <button 
+                      className="btn-danger btn-small" 
+                      onClick={() => handleDeleteTemplate(t.id)}
+                    >
+                      🗑️ 削除
+                    </button>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {editingTemplate && (
+        <div className="modal-overlay" onClick={() => setEditingTemplate(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h2>✏️ テンプレート編集</h2>
+            <div className="form-group">
+              <label>テンプレート名</label>
+              <input
+                type="text"
+                value={editingTemplate.name}
+                onChange={e => setEditingTemplate({...editingTemplate, name: e.target.value})}
+                placeholder="例: 週次定例会議"
+              />
+            </div>
+            <div className="form-group">
+              <label>システムプロンプト（議事録フォーマット）</label>
+              <textarea
+                rows={20}
+                value={editingTemplate.systemPrompt}
+                onChange={e => setEditingTemplate({...editingTemplate, systemPrompt: e.target.value})}
+                placeholder="Claudeに送信されるプロンプトを記述してください..."
+              />
+              <small className="hint">
+                このプロンプトが議事録の出力形式を決定します。Markdown形式で構造を指定してください。
+              </small>
+            </div>
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setEditingTemplate(null)}>
+                キャンセル
+              </button>
+              <button className="btn-primary" onClick={handleSaveTemplate}>
+                💾 保存
+              </button>
+            </div>
           </div>
         </div>
       )}
