@@ -140,3 +140,14 @@ MIT
 
 合同会社まる百工房（Maruhuku Kobo LLC）  
 Claude Code Agent
+
+## 作業プロトコル
+
+作業開始・終了時は `~/projects/flow-manager/docs/flows/work-protocol.md` を参照。
+
+百式page_id: 3071aeb6-4b1d-8186-bb65-c0e6a38cd3cc
+
+
+
+## 次のアクション
+- 議事録形式カスタマイズ等の機能拡張
