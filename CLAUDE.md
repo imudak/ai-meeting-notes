@@ -150,4 +150,25 @@ Claude Code Agent
 
 
 ## 次のアクション
-- Vercel/Cloudflare Pagesへのデプロイ、運用テスト（カスタムテンプレート機能のUX確認）
+- imudakによる運用テスト（カスタムテンプレート機能のUX確認、実際の会議での利用テスト）
+
+## デプロイ情報
+
+### Vercel（本番環境）
+- URL: https://ai-meeting-notes-one.vercel.app
+- デプロイ日: 2026-02-16
+- ステータス: 運用中
+
+### 使い方
+1. アクセス: https://ai-meeting-notes-one.vercel.app
+2. 設定ボタンからClaude APIキーを入力（localStorageに保存）
+3. テンプレートを選択（8種類のプリセット + カスタム作成可能）
+4. 会議の文字起こしを貼り付けて「議事録を生成」
+5. 生成された議事録をMarkdown/PDF/DOCX形式でエクスポート
+
+## Git Push ルール
+
+作業完了時は必ず `jj git push` を実行すること。
+- MUSUBIの各ステップ完了時
+- 機能実装完了時
+- steering files 更新時
