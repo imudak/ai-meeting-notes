@@ -30,7 +30,7 @@ function App() {
   const resultRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!apiKey) setShowSettings(true)
+    // APIキー未入力でもGemini Flashで動作するため、自動表示は不要
   }, [])
 
   const saveKey = (key: string) => {
@@ -96,7 +96,6 @@ function App() {
   }
 
   const handleGenerate = async () => {
-    if (!apiKey) { setShowSettings(true); return }
     if (!transcript.trim()) return
     setLoading(true); setError(''); setResult('')
     try {
@@ -157,19 +156,19 @@ function App() {
 
       {showSettings && (
         <div className="settings-panel">
-          <h3>🔑 APIキー設定</h3>
-          <p className="settings-desc">Anthropic APIキーを入力してください。キーはブラウザのlocalStorageに保存され、外部には送信されません。</p>
+          <h3>🔑 APIキー設定（任意）</h3>
+          <p className="settings-desc">Anthropic APIキーをお持ちの場合は入力してください（任意）。未入力の場合はGemini Flashを使用します。キーはブラウザのlocalStorageに保存され、外部には送信されません。</p>
           <div className="key-input-row">
             <input
               type="password"
-              placeholder="sk-ant-..."
+              placeholder="sk-ant-... （未入力でもGemini Flashで動作します）"
               value={apiKey}
               onChange={e => saveKey(e.target.value)}
             />
             <button className="btn-secondary" onClick={() => setShowSettings(false)}>閉じる</button>
           </div>
           <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" className="key-link">
-            APIキーの取得はこちら →
+            Anthropic APIキーの取得はこちら →
           </a>
 
           <h3 style={{ marginTop: '24px' }}>📄 テンプレート管理</h3>
@@ -341,7 +340,7 @@ function App() {
       </main>
 
       <footer>
-        <p>Powered by Claude API · APIキーはお使いのブラウザにのみ保存されます</p>
+        <p>Powered by Gemini Flash / Claude API · APIキーはお使いのブラウザにのみ保存されます</p>
       </footer>
     </div>
   )

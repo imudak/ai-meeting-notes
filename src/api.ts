@@ -3,6 +3,24 @@ export async function generateMinutes(
   apiKey: string,
   systemPrompt: string
 ): Promise<string> {
+  // APIキーが未入力の場合はVercel Function経由でGemini Flashを使用
+  if (!apiKey) {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transcript, systemPrompt }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error((err as { error?: string }).error || `API Error: ${res.status}`);
+    }
+
+    const data = await res.json() as { result: string };
+    return data.result;
+  }
+
+  // APIキーがある場合はAnthropicを直接呼び出す
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -21,9 +39,9 @@ export async function generateMinutes(
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error?.message || `API Error: ${res.status}`);
+    throw new Error((err as { error?: { message?: string } }).error?.message || `API Error: ${res.status}`);
   }
 
-  const data = await res.json();
+  const data = await res.json() as { content: Array<{ text: string }> };
   return data.content[0].text;
 }

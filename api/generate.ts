@@ -1,0 +1,68 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // CORS設定
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
+  const { transcript, systemPrompt } = req.body as { transcript: string; systemPrompt: string };
+
+  if (!transcript || !systemPrompt) {
+    return res.status(400).json({ error: 'transcript and systemPrompt are required' });
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: 'GEMINI_API_KEY is not configured' });
+  }
+
+  const geminiRes = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: {
+          parts: [{ text: systemPrompt }]
+        },
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: `以下の会議の文字起こしから議事録を作成してください:\n\n${transcript}` }]
+          }
+        ],
+        generationConfig: {
+          maxOutputTokens: 4096
+        }
+      })
+    }
+  );
+
+  if (!geminiRes.ok) {
+    const err = await geminiRes.json().catch(() => ({}));
+    return res.status(geminiRes.status).json({ error: (err as { error?: { message?: string } }).error?.message || `Gemini API Error: ${geminiRes.status}` });
+  }
+
+  const data = await geminiRes.json() as {
+    candidates?: Array<{
+      content?: {
+        parts?: Array<{ text?: string }>
+      }
+    }>
+  };
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) {
+    return res.status(500).json({ error: 'Gemini APIから応答が取得できませんでした' });
+  }
+
+  return res.status(200).json({ result: text });
+}
