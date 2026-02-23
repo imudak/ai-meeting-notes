@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@maruhuku/ai-client": "github:imudak/maruhuku-ai-client",
+    "@maruhuku/ai-client": "git+https://github.com/imudak/maruhuku-ai-client.git",
     "docx": "^9.5.2",
     "file-saver": "^2.0.5",
     "html2canvas": "^1.4.1",
