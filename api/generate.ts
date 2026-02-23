@@ -31,7 +31,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       `以下の会議の文字起こしから議事録を作成してください:\n\n${transcript}`,
       {
         apiKey,
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         maxOutputTokens: 4096,
         system: systemPrompt,
       }
