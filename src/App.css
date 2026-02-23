@@ -161,7 +161,8 @@ h1 { font-size: 24px; }
 }
 
 .input-section { margin-bottom: 24px; }
-.input-section h2 { font-size: 16px; margin-bottom: 8px; }
+.input-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.input-section-header h2 { font-size: 16px; margin: 0; }
 .input-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
 .char-count { font-size: 13px; color: var(--text-secondary); }
 .generate-btn { padding: 12px 28px; font-size: 15px; }

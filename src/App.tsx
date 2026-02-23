@@ -11,6 +11,7 @@ import {
 import type { Template } from './templates'
 import { copyMarkdown, downloadMarkdown, downloadPDF, downloadDOCX } from './export'
 import { MarkdownPreview } from './components/MarkdownPreview'
+import { SAMPLE_TRANSCRIPT } from './samples'
 import './App.css'
 
 function App() {
@@ -278,7 +279,12 @@ function App() {
 
       <main>
         <section className="input-section">
-          <h2>会議の文字起こし</h2>
+          <div className="input-section-header">
+            <h2>会議の文字起こし</h2>
+            <button className="btn-secondary btn-small" onClick={() => setTranscript(SAMPLE_TRANSCRIPT)}>
+              📋 サンプルを読み込む
+            </button>
+          </div>
           <textarea
             rows={12}
             placeholder="ここに会議の文字起こしテキストを貼り付けてください..."
