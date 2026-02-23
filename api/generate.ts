@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { fetchGeminiContent } from "@maruhuku/ai-client";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS設定
@@ -25,44 +26,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'GEMINI_API_KEY is not configured' });
   }
 
-  const geminiRes = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: systemPrompt }]
-        },
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: `以下の会議の文字起こしから議事録を作成してください:\n\n${transcript}` }]
-          }
-        ],
-        generationConfig: {
-          maxOutputTokens: 4096
-        }
-      })
-    }
-  );
-
-  if (!geminiRes.ok) {
-    const err = await geminiRes.json().catch(() => ({}));
-    return res.status(geminiRes.status).json({ error: (err as { error?: { message?: string } }).error?.message || `Gemini API Error: ${geminiRes.status}` });
-  }
-
-  const data = await geminiRes.json() as {
-    candidates?: Array<{
-      content?: {
-        parts?: Array<{ text?: string }>
+  try {
+    const text = await fetchGeminiContent(
+      `以下の会議の文字起こしから議事録を作成してください:\n\n${transcript}`,
+      {
+        apiKey,
+        model: 'gemini-2.0-flash',
+        maxOutputTokens: 4096,
+        system: systemPrompt,
       }
-    }>
-  };
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) {
-    return res.status(500).json({ error: 'Gemini APIから応答が取得できませんでした' });
-  }
+    );
 
-  return res.status(200).json({ result: text });
+    if (!text) {
+      return res.status(500).json({ error: 'Gemini APIから応答が取得できませんでした' });
+    }
+
+    return res.status(200).json({ result: text });
+  } catch (err) {
+    const error = err as { message?: string; status?: number };
+    return res.status(error.status ?? 500).json({ error: error.message || 'Gemini API Error' });
+  }
 }

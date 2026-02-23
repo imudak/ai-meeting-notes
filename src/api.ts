@@ -1,3 +1,5 @@
+import { fetchAnthropicContent } from "@maruhuku/ai-client";
+
 export async function generateMinutes(
   transcript: string,
   apiKey: string,
@@ -21,27 +23,12 @@ export async function generateMinutes(
   }
 
   // APIキーがある場合はAnthropicを直接呼び出す
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
+  return fetchAnthropicContent(
+    `以下の会議の文字起こしから議事録を作成してください:\n\n${transcript}`,
+    {
+      apiKey,
       system: systemPrompt,
-      messages: [{ role: 'user', content: `以下の会議の文字起こしから議事録を作成してください:\n\n${transcript}` }],
-    }),
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: { message?: string } }).error?.message || `API Error: ${res.status}`);
-  }
-
-  const data = await res.json() as { content: Array<{ text: string }> };
-  return data.content[0].text;
+      dangerouslyAllowBrowser: true,
+    }
+  );
 }
